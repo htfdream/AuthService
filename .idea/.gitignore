@@ -1,0 +1,33 @@
+# Default ignored files
+# Compiled files
+**/target/
+!**/target/classes/
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+application-local.yml
+application-dev.yml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test output
+**/test-output/
+**/target/test-classes/
+
+# Docker
+data/
+*.pid
