@@ -1,0 +1,189 @@
+version: '3.8'
+
+services:
+  # ============= База данных PostgreSQL =============
+  postgres:
+    image: postgres:15-alpine
+    container_name: auth-postgres
+    environment:
+      POSTGRES_DB: authdb
+      POSTGRES_USER: authuser
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-authpass123}
+      POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U authuser -d authdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - auth-network
+
+  # ============= Redis для кешей и токенов =============
+  redis:
+    image: redis:7-alpine
+    container_name: auth-redis
+    command: redis-server --requirepass ${REDIS_PASSWORD:-redispass123} --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - auth-network
+
+  # ============= Kafka для событий =============
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    container_name: auth-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    ports:
+      - "2181:2181"
+    networks:
+      - auth-network
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    container_name: auth-kafka
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    ports:
+      - "9092:9092"
+    networks:
+      - auth-network
+
+  # ============= Auth сервис =============
+  auth-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "9090:9090"    # gRPC порт
+      - "8080:8080"    # HTTP порт (health, metrics)
+    environment:
+      # Spring профиль
+      SPRING_PROFILES_ACTIVE: docker
+
+      # PostgreSQL
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: authdb
+      DB_USER: authuser
+      DB_PASSWORD: ${DB_PASSWORD:-authpass123}
+
+      # Redis
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-redispass123}
+
+      # Kafka
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+
+      # JWT
+      JWT_SECRET: ${JWT_SECRET:-default-secret-key-must-be-changed-in-production-12345678901234567890123456789012}
+      JWT_ACCESS_EXPIRATION: 900
+      JWT_REFRESH_EXPIRATION: 604800
+
+      # Argon2
+      ARGON2_ITERATIONS: 3
+      ARGON2_MEMORY: 65536
+      ARGON2_PARALLELISM: 1
+
+      # Rate Limiting
+      RATE_LIMIT_MAX: 100
+
+      # Logging
+      LOG_LEVEL: INFO
+
+      # Email (mock режим)
+      EMAIL_MOCK: "true"
+
+      # JVM options
+      JAVA_OPTS: "-Xmx512m -Xms256m"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - auth-network
+    restart: unless-stopped
+
+  # ============= Prometheus для метрик =============
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: auth-prometheus
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+    networks:
+      - auth-network
+    restart: unless-stopped
+
+  # ============= Grafana для дашбордов =============
+  grafana:
+    image: grafana/grafana:latest
+    container_name: auth-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - prometheus
+    networks:
+      - auth-network
+    restart: unless-stopped
+
+# ============= Volumes для сохранения данных =============
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+# ============= Сеть =============
+networks:
+  auth-network:
+    driver: bridge

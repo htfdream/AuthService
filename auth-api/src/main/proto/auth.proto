@@ -1,9 +1,9 @@
 syntax = "proto3";
 
-package com.gtf.auth.v1;
+package com.gth.auth.v1;
 
 option java_multiple_files = true;
-option java_package = "com.atls.auth.v1";
+option java_package = "com.gth.auth.v1";
 option java_outer_classname = "AuthServiceProto";
 
 service AuthService {
