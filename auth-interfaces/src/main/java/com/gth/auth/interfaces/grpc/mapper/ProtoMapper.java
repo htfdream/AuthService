@@ -17,14 +17,12 @@ public class ProtoMapper {
                 .build();
     }
 
-//    public LoginCommand toCommand(LoginRequest request) {
-//        return LoginCommand.builder()
-//                .email(request.getEmail())
-//                .password(request.getPassword())
-//                .userAgent(request.getUserAgent())
-//                .ipAddress(request.getIpAddress())
-//                .build();
-//    }
+    public LoginCommand toCommand(LoginRequest request) {
+        return LoginCommand.builder()
+                .email(request.getEmail())
+                .password(request.getPassword())
+                .build();
+    }
 
     // Result -> Response
     public RegisterResponse toResponse(RegisterCommandResult result) {
@@ -35,12 +33,11 @@ public class ProtoMapper {
                 .build();
     }
 
-//    public LoginResponse toResponse(LoginCommandResult result) {
-//        return LoginResponse.newBuilder()
-//                .setUserId(result.getUserId().toString())
-//                .setAccessToken(result.getAccessToken())
-//                .setRefreshToken(result.getRefreshToken())
-//                .setExpiresIn(result.getExpiresIn())
-//                .build();
-//    }
+    public LoginResponse toResponse(LoginCommandResult result) {
+        return LoginResponse.newBuilder()
+                .setUserId(result.getUserId().toString())
+                .setAccessToken(result.getAccessToken() == null ? "" : result.getAccessToken())
+                .setRefreshToken(result.getRefreshToken() == null ? "" : result.getRefreshToken())
+                .build();
+    }
 }

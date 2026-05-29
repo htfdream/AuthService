@@ -4,14 +4,9 @@ import com.gth.auth.domain.vo.UserId;
 import lombok.Builder;
 import lombok.Getter;
 
-/**
- * Результат команды регистрации.
- * Immutable объект, возвращаемый из Command Handler.
- */
 @Getter
 @Builder
-public class RegisterCommandResult implements CommandResult {
-
+public class LoginCommandResult implements CommandResult {
     /**
      * ID зарегистрированного пользователя
      */
