@@ -57,6 +57,16 @@ public class JwtTokenProvider implements TokenGenerationService {
         return UUID.fromString(subject);
     }
 
+    public Date getExpirationFromToken(String token) {
+        Date subject = Jwts.parser()
+                .verifyWith(secretKey)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getExpiration();
+        return subject;
+    }
+
     public boolean validateToken(String token) {
         try {
             Jwts.parser().verifyWith(secretKey).build().parseSignedClaims(token);

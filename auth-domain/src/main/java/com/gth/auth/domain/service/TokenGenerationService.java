@@ -3,6 +3,7 @@ package com.gth.auth.domain.service;
 import com.gth.auth.domain.aggregate.User;
 import com.gth.auth.domain.vo.Email;
 
+import java.util.Date;
 import java.util.UUID;
 
 public interface TokenGenerationService {
@@ -14,4 +15,10 @@ public interface TokenGenerationService {
     public long getRefreshTokenExpirationSeconds();
 
     public long getAccessTokenExpirationSeconds();
+
+    public boolean validateToken(String token);
+
+    public UUID getUserIdFromToken(String token);
+
+    public Date getExpirationFromToken(String token);
 }

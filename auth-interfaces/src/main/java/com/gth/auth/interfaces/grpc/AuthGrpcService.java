@@ -2,9 +2,9 @@ package com.gth.auth.interfaces.grpc;
 
 import com.gth.auth.application.command.*;
 import com.gth.auth.application.command.result.*;
-import com.gth.auth.application.handler.LoginCommandHandler;
-import com.gth.auth.application.handler.RefreshTokenCommandHandler;
-import com.gth.auth.application.handler.RegisterCommandHandler;
+import com.gth.auth.application.handler.*;
+import com.gth.auth.application.query.ValidateTokenQuery;
+import com.gth.auth.application.query.result.ValidateTokenQueryResult;
 import com.gth.auth.domain.exception.*;
 import com.gth.auth.interfaces.grpc.mapper.ProtoMapper;
 import com.gth.auth.v1.*;
@@ -22,7 +22,9 @@ public class AuthGrpcService extends AuthServiceGrpc.AuthServiceImplBase {
     private final RegisterCommandHandler registerHandler;
     private final LoginCommandHandler loginHandler;
     private final RefreshTokenCommandHandler refreshTokenHandler;
+    private final LogoutCommandHandler logoutHandler;
     private final ProtoMapper mapper;
+    private final ValidateQueryHandler validateTokenHandler;
 
     @Override
     public void register(RegisterRequest request,
@@ -119,5 +121,40 @@ public class AuthGrpcService extends AuthServiceGrpc.AuthServiceImplBase {
                             .asRuntimeException()
             );
         }
+    }
+
+    @Override
+    public void logout(LogoutRequest request, StreamObserver<LogoutResponse> responseObserver) {
+        try {
+            LogoutCommand command = new LogoutCommand(request.getRefreshToken());
+            LogoutCommandResult result = logoutHandler.handle(command);
+
+            LogoutResponse response = LogoutResponse.newBuilder()
+                    .setSuccess(true)
+                    .build();
+
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            responseObserver.onError(
+                    Status.UNAUTHENTICATED
+                            .withDescription(e.getMessage())
+                            .asRuntimeException()
+            );
+        }
+    }
+
+    @Override
+    public void validateToken(ValidateTokenRequest request, StreamObserver<ValidateTokenResponse> responseObserver) {
+        ValidateTokenQuery query = new ValidateTokenQuery(request.getToken());
+        ValidateTokenQueryResult result = validateTokenHandler.handle(query);
+
+        responseObserver.onNext(ValidateTokenResponse.newBuilder()
+                .setValid(result.isValid())
+                .setUserId(result.getUserId())
+                .setExpiresAt(result.getExpires_at().toEpochMilli())
+                .build()
+        );
+        responseObserver.onCompleted();
     }
 }
