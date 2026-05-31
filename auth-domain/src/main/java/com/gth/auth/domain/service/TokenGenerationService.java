@@ -10,4 +10,8 @@ public interface TokenGenerationService {
     record TokenPair(String accessToken, String refreshToken) {}
 
     TokenPair generate(User user);
+
+    public long getRefreshTokenExpirationSeconds();
+
+    public long getAccessTokenExpirationSeconds();
 }

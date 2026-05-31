@@ -3,6 +3,7 @@ package com.gth.auth.interfaces.grpc;
 import com.gth.auth.application.command.*;
 import com.gth.auth.application.command.result.*;
 import com.gth.auth.application.handler.LoginCommandHandler;
+import com.gth.auth.application.handler.RefreshTokenCommandHandler;
 import com.gth.auth.application.handler.RegisterCommandHandler;
 import com.gth.auth.domain.exception.*;
 import com.gth.auth.interfaces.grpc.mapper.ProtoMapper;
@@ -20,6 +21,7 @@ public class AuthGrpcService extends AuthServiceGrpc.AuthServiceImplBase {
 
     private final RegisterCommandHandler registerHandler;
     private final LoginCommandHandler loginHandler;
+    private final RefreshTokenCommandHandler refreshTokenHandler;
     private final ProtoMapper mapper;
 
     @Override
@@ -88,6 +90,31 @@ public class AuthGrpcService extends AuthServiceGrpc.AuthServiceImplBase {
         } catch (IllegalArgumentException e){
             responseObserver.onError(
                     Status.INVALID_ARGUMENT
+                            .withDescription(e.getMessage())
+                            .asRuntimeException()
+            );
+        }
+    }
+
+    @Override
+    public void refreshToken(RefreshTokenRequest request,
+                             StreamObserver<RefreshTokenResponse> responseObserver) {
+        try {
+            RefreshTokenCommand command = new RefreshTokenCommand(request.getRefreshToken());
+            RefreshTokenCommandResult result = refreshTokenHandler.handle(command);
+
+            RefreshTokenResponse response = RefreshTokenResponse.newBuilder()
+                    .setAccessToken(result.getAccessToken())
+                    .setRefreshToken(result.getRefreshToken())
+                    .setExpireIn(result.getExpireIn())
+                    .build();
+
+            responseObserver.onNext(response);
+            responseObserver.onCompleted();
+
+        } catch (Exception e) {
+            responseObserver.onError(
+                    Status.UNAUTHENTICATED
                             .withDescription(e.getMessage())
                             .asRuntimeException()
             );

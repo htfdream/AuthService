@@ -9,6 +9,7 @@ option java_outer_classname = "AuthServiceProto";
 service AuthService {
   rpc Register(RegisterRequest) returns (RegisterResponse);
   rpc Login(LoginRequest) returns (LoginResponse);
+  rpc RefreshToken(RefreshTokenRequest) returns (RefreshTokenResponse);
 }
 
 message RegisterRequest {
@@ -34,5 +35,15 @@ message LoginResponse {
   string name = 2;
   string access_token = 3;
   string refresh_token = 4;
-  string expire_in = 5;
+  int64 expire_in = 5;
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+message RefreshTokenResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  int64 expire_in = 5;
 }

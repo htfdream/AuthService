@@ -2,7 +2,6 @@ package com.gth.auth.infrastructure.security.token;
 
 import com.gth.auth.domain.aggregate.User;
 import com.gth.auth.domain.service.TokenGenerationService;
-import com.gth.auth.domain.vo.Email;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -74,5 +73,13 @@ public class JwtTokenProvider implements TokenGenerationService {
     @Override
     public TokenPair generate(User user) {
         return new TokenPair(generateAccessToken(user.getId().value()), generateRefreshToken(user.getId().value()));
+    }
+
+    public long getRefreshTokenExpirationSeconds() {
+        return refreshTokenExpirationSeconds;
+    }
+
+    public UUID getUserIdFromRefreshToken(String token) {
+        return getUserIdFromToken(token); // JWT содержит userId
     }
 }
