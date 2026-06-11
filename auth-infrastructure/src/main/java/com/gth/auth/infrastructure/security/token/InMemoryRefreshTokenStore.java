@@ -2,6 +2,7 @@ package com.gth.auth.infrastructure.security.token;
 
 import com.gth.auth.domain.model.RefreshTokenData;
 import com.gth.auth.domain.service.RefreshTokenService;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -10,6 +11,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 @Component
+@Profile("test")
 public class InMemoryRefreshTokenStore  implements RefreshTokenService {
 
     private final Map<String, RefreshTokenData> tokens = new ConcurrentHashMap<>();

@@ -1,10 +1,12 @@
 package com.gth.auth.infrastructure.security.token;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnBean(InMemoryRefreshTokenStore.class)
 @EnableScheduling
 public class TokenCleanupScheduler {
 

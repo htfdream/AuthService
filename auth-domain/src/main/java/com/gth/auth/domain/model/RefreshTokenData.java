@@ -1,5 +1,6 @@
 package com.gth.auth.domain.model;
 
+import java.beans.Transient;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -20,7 +21,7 @@ public record RefreshTokenData(
                 false
         );
     }
-
+    @Transient
     public boolean isValid() {
         return !revoked && Instant.now().isBefore(expiresAt);
     }
