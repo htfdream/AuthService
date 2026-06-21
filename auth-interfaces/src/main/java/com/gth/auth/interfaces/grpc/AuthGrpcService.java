@@ -25,6 +25,8 @@ public class AuthGrpcService extends AuthServiceGrpc.AuthServiceImplBase {
     private final LogoutCommandHandler logoutHandler;
     private final ProtoMapper mapper;
     private final ValidateQueryHandler validateTokenHandler;
+    private final PasswordResetCommandHandler passwordResetCommandHandler;
+    private final ResetPasswordCommandHandler resetPasswordCommandHandler;
 
     @Override
     public void register(RegisterRequest request,
@@ -156,5 +158,46 @@ public class AuthGrpcService extends AuthServiceGrpc.AuthServiceImplBase {
                 .build()
         );
         responseObserver.onCompleted();
+    }
+
+    @Override
+    public void requestPasswordReset(PasswordResetRequest request, StreamObserver<PasswordResetResponse> responseObserver) {
+        try {
+            PasswordResetCommand command = new PasswordResetCommand(request.getEmail());
+            PasswordResetCommandResult result = passwordResetCommandHandler.handle(command);
+
+            responseObserver.onNext(PasswordResetResponse.newBuilder()
+                    .setSuccess(result.isSuccess())
+                    .setMessage(result.getMessage())
+                    .build()
+            );
+            responseObserver.onCompleted();
+        } catch (RuntimeException e) {
+            responseObserver.onNext(PasswordResetResponse.newBuilder()
+                    .setSuccess(true)
+                    .setMessage("Reset link was sent")
+                    .build()
+            );
+            responseObserver.onCompleted();
+        }
+
+    }
+
+    @Override
+    public void resetPassword(ResetPasswordRequest request, StreamObserver<ResetPasswordResponse> responseObserver) {
+        try {
+            ResetPasswordCommand command = new ResetPasswordCommand(request.getResetToken(), request.getNewPassword());
+            ResetPasswordCommandResult result = resetPasswordCommandHandler.handle(command);
+
+            responseObserver.onNext(ResetPasswordResponse.newBuilder()
+                    .setSuccess(result.isSuccess())
+                    .setMessage(result.getMessage())
+                    .build());
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            responseObserver.onError(Status.INVALID_ARGUMENT
+                    .withDescription(e.getMessage())
+                    .asRuntimeException());
+        }
     }
 }

@@ -1,0 +1,20 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:redispass123}
+      timeout: 2000ms
+
+  flyway:
+    enabled: false
+
+grpc:
+  server:
+    port: 9090
+test:
+  from-prod-file: "YES_IT_WORKS"
